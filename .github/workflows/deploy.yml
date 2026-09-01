@@ -1,0 +1,93 @@
+name: Application Deployment
+
+on:
+    workflow_run:
+        workflows: ["Application Build"]
+        types:
+            - completed
+        branches:
+            - main
+
+env:
+    AWS_REGION: eu-north-1
+
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+
+        permissions:
+            contents: read
+            id-token: write
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Configure AWS credentials
+              uses: aws-actions/configure-aws-credentials@v3
+              with:
+                role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/github-role
+                aws-region: ${{ env.AWS_REGION }}
+
+            - name: Create EC2 Instance
+              run: |
+                INSTANCE_ID=$(aws ec2 run-instances \
+                  --image-id ${{ secrets.AWS_AMI_ID }} \
+                  --instance-type t2.micro \
+                  --key-name lms-key\
+                  --security-group-ids ${{ secrets.AWS_SECURITY_GROUP_ID }} \
+                  --subnet-id ${{ secrets.AWS_SUBNET_ID }} \
+                  --query 'Instances[0].InstanceId' \
+                  --tag-specifications 'ResourceType=instance, Tags=[{Key=Name,Value=lms-instance}]')
+
+                echo "EC2 Instance created with ID: $INSTANCE_ID"
+
+            - name: Wait for EC2 Instance to be running
+              run: |
+                aws ec2 wait instance-running --instance-ids $INSTANCE_ID
+                echo "EC2 Instance is now running."
+
+            - name: Get Public IP of EC2 Instance
+              id: get_public_ip
+              run: |
+                PUBLIC_IP=$(aws ec2 describe-instances \
+                  --instance-ids $INSTANCE_ID \
+                  --query 'Reservations[0].Instances[0].PublicIpAddress'\
+                  --output text)
+                echo "PUBLIC_IP=$PUBLIC_IP" >> "$GITHUB_OUTPUT"
+
+            - name: Setup SSH Key
+              run: |
+                mkdir -p ~/.ssh
+                echo "${{ secrets.SSH_PRIVATE_KEY}}" > ~/.ssh/id_rsa
+                chmod 600 ~/.ssh/id_rsa
+
+            - name: Login to Docker Hub
+              uses: docker/login-action@v3
+              with: 
+                username: ${{ secrets.DOCKERHUB_USERNAME }}
+                password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+            - name: Deploy to EC2 via SSH
+              uses: appleboy/ssh-action@v1.0.3
+              with:
+                host: ${{ steps.get_public_ip.outputs.PUBLIC_IP }}
+                username: ec2-user
+                key: ${{ secrets.SSH_PRIVATE_KEY }}
+                port: 22
+                script: |
+                  echo "Successfully connected to EC2 Instance"
+                  sudo dnf update -y || true
+                  sudo dnf install -y docker || true
+                  sudo systemctl start docker || true
+                  sudo systemctl enable docker
+                  sudo dnf install -y docker-compose || true
+                  git clone https://github.com/Adeife79/LMS-Application-Deployment-with-GitHub-Actions.git
+                  sudo usermod -aG docker ec2-user
+                  sudo docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_PASSWORD }}
+                  sudo docker compose pull 
+                  sudo docker compose up -d || true
+
+
+
+
