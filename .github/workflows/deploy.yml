@@ -2,7 +2,7 @@ name: Application Deployment
 
 on:
     workflow_run:
-        workflows: ["Application Build"]
+        workflows: ["Continuous Integration"]
         types:
             - completed
         branches:
