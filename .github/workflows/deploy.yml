@@ -75,6 +75,15 @@ jobs:
 
                 echo "EC2 Instance created with ID: $INSTANCE_ID"
 
+
+            - name: Describe EC2 Instance
+              run: |
+                aws ec2 describe-instances \
+                  --instance-ids "$INSTANCE_ID" \
+                  --query 'Reservations[0].Instances[0].{State:State.Name,StateReason:StateReason,InstanceType:InstanceType,AMI:ImageId,AZ:Placement.AvailabilityZone}' \
+                  --output table
+
+                
             - name: Wait for EC2 Instance to be running
               run: |
                 aws ec2 wait instance-running --instance-ids $INSTANCE_ID
