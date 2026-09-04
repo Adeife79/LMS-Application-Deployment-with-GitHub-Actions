@@ -95,24 +95,24 @@ jobs:
                 aws ec2 wait instance-running --instance-ids "$INSTANCE_ID"
                 echo "EC2 Instance is now running."
 
-#            - name: Get EC2 Public DNS
-#              id: get_public_dns
-#              run: |
-#                PUBLIC_DNS=$(aws ec2 describe-instances \
-#--instance-ids "$INSTANCE_ID" \
-#                  --query 'Reservations[0].Instances[0].PublicDnsName' \
-#                  --output text)
-#
-#                echo "Public DNS: $PUBLIC_DNS"
+            - name: Get EC2 Public DNS
+              id: get_public_dns
+              run: |
+                PUBLIC_DNS=$(aws ec2 describe-instances \
+                  --instance-ids "$INSTANCE_ID" \
+                  --query 'Reservations[0].Instances[0].PublicDnsName' \
+                  --output text)
 
-#                if [ "$PUBLIC_DNS" = "None" ] || [ -z "$PUBLIC_DNS" ]; then
-#                  echo "ERROR: EC2 instance does not have a public DNS name"
-#                  exit 1
-#                fi
-#
-#                echo "PUBLIC_DNS=$PUBLIC_DNS" >> "$GITHUB_OUTPUT"
-#
-#
+                echo "Public DNS: $PUBLIC_DNS"
+
+                if [ "$PUBLIC_DNS" = "None" ] || [ -z "$PUBLIC_DNS" ]; then
+                  echo "ERROR: EC2 instance does not have a public DNS name"
+                  exit 1
+                fi
+
+                echo "PUBLIC_DNS=$PUBLIC_DNS" >> "$GITHUB_OUTPUT"
+
+
             - name: Get Public IP of EC2 Instance
               id: get_public_ip
               run: |
@@ -139,7 +139,7 @@ jobs:
             - name: Deploy to EC2 via SSH
               uses: appleboy/ssh-action@v1.0.3
               with:
-                host: ${{ steps.get_public_ip.outputs.PUBLIC_IP }}
+                host: ${{ steps.get_public_dns.outputs.PUBLIC_DNS }}
                 username: ubuntu
                 key: ${{ secrets.SSH_PRIVATE_KEY }}
                 port: 22
