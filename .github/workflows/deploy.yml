@@ -140,7 +140,7 @@ jobs:
               uses: appleboy/ssh-action@v1.0.3
               with:
                 host: ${{ steps.get_public_dns.outputs.PUBLIC_DNS }}
-                username: ubuntu
+                username: ec2-user
                 key: ${{ secrets.SSH_PRIVATE_KEY }}
                 port: 22
                 script: |
@@ -152,7 +152,7 @@ jobs:
                   sudo dnf install -y docker-compose || true
                   git clone https://github.com/Adeife79/LMS-Application-Deployment-with-GitHub-Actions.git
                   cd LMS-Application-Deployment-with-GitHub-Actions
-                  sudo usermod -aG docker ubuntu
+                  sudo usermod -aG docker ec2-user
                   sudo docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_PASSWORD }}
                   sudo docker compose pull 
                   sudo docker compose up -d || true
