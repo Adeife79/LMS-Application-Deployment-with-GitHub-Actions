@@ -114,6 +114,24 @@ jobs:
         #        echo "PUBLIC_DNS=$PUBLIC_DNS" >> "$GITHUB_OUTPUT"
 
 
+            - name: Wait for SSM registration (with visibility)
+              run: |
+                for i in $(seq 1 20); do
+                  STATUS=$(aws ssm describe-instance-information \
+                    --filters "Key=InstanceIds,Values=$INSTANCE_ID" \
+                    --query "InstanceInformationList[0].PingStatus" \
+                    --output text 2>/dev/null)
+                  echo "Attempt $i: PingStatus=$STATUS"
+                  if [ "$STATUS" == "Online" ]; then
+                    echo "Instance is online in SSM."
+                    exit 0
+                  fi
+                  sleep 10
+                done
+                echo "Instance never registered with SSM after 200s"
+                exit 1
+
+
             - name: Get Public IP of EC2 Instance
               id: get_public_ip
               run: |
