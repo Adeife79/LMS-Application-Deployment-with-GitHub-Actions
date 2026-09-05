@@ -137,16 +137,17 @@ jobs:
                 username: ${{ secrets.DOCKERHUB_USERNAME }}
                 password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-            - name: Deploy to EC2 via SSM
-              uses: appleboy/ssh-action@v1.0.3
+            
               
 #              with:
 #                host: ${{ steps.get_public_dns.outputs.PUBLIC_DNS }}
 #                username: ubuntu
 #                key: ${{ secrets.SSH_PRIVATE_KEY }}
 #                port: 22
-                run: |
-                   COMMAND_ID=$(aws ssm send-command \
+            - name: Deploy to EC2 via SSM
+              shell: bash
+              run: |
+                COMMAND_ID=$(aws ssm send-command \
                       --instance-ids "$INSTANCE_ID" \
                       --document-name "AWS-RunShellScript" \
                       --comment "Deploy LMS application" \
