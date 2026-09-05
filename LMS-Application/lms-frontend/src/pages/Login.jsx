@@ -15,7 +15,7 @@ const Login = () => {
     e.preventDefault();
     setError('');
     try {
-      const res = await axios.post('http://51.20.74.11:8009/api/token/', form);
+      const res = await axios.post('http://<EC2_Public_IP>:8009/api/token/', form);
       localStorage.setItem('access', res.data.access);
       localStorage.setItem('refresh', res.data.refresh);
       navigate('/');
