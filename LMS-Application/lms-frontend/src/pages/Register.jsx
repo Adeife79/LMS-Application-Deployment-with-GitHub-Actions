@@ -23,7 +23,7 @@ const Register = () => {
     setError("");
     setSuccess("");
     try {
-      await axios.post("http://16.170.230.162:8009/api/user/auth/", form);
+      await axios.post("http://<EC2_PUBLIC_IP>:8009/api/user/auth/", form);
       setSuccess("Registration successful! Redirecting to login...");
       setTimeout(() => navigate("/login"), 1500);
     } catch (err) {

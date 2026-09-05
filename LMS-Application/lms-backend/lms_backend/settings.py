@@ -69,7 +69,7 @@ MIDDLEWARE = [
 
 
 CORS_ALLOWED_ORIGINS = [
-    "http://16.170.230.162:5173",
+    "http://<EC2_PUBLIC_IP>:5173",
 ]
 CORS_ALLOW_CREDENTIALS = True
 
